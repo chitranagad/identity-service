@@ -1,8 +1,12 @@
 package com.example.identity_service.controller;
 
+import com.example.identity_service.dto.AuthRequest;
 import com.example.identity_service.entity.UserCredential;
 import com.example.identity_service.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,13 +16,22 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
     @PostMapping("/register")
     public String addNewUser(@RequestBody UserCredential user){
         return authService.saveUser(user);
     }
-    @GetMapping("/token")
-    public String getToken(UserCredential userCredential){
-     return authService.generateToken(userCredential.getName());
+
+    @PostMapping("/token")
+    public String getToken(@RequestBody AuthRequest authRequest){
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(),authRequest.getPassword()));
+        if(authentication.isAuthenticated()) {
+            return authService.generateToken(authRequest.getUsername());
+        } else{
+            throw new RuntimeException("invalid access");
+        }
     }
 
     @GetMapping("/validate")
